@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芒果產銷履歷與果園管理系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        /* Custom print styling */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background-color: white;
+                color: black;
+            }
+        }
+        /* 確保行動裝置點擊按鈕不會有奇怪的反藍底色 */
+        input, button, select, textarea {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen selection:bg-emerald-200">
+    <div id="app" class="pb-20 md:pb-6 max-w-7xl mx-auto">
+        
+        <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-50 no-print">
+            <div class="px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-amber-500 p-2 rounded-lg text-emerald-950 flex items-center justify-center">
+                            <i class="fa-solid fa-seedling text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-lg font-bold tracking-wider block">芒果履歷助手</span>
+                            <span class="text-xs text-emerald-200 block -mt-1">Orchard Management</span>
+                        </div>
+                    </div>
+                    <nav class="hidden md:flex space-x-1">
+                        <button v-for="tab in tabs" :key="tab.id" 
+                                @click="currentTab = tab.id"
+                                :class="['px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center space-x-1.5', 
+                                         currentTab === tab.id ? 'bg-emerald-800 text-amber-300 shadow-inner' : 'hover:bg-emerald-600 text-emerald-100']">
+                            <i :class="tab.icon"></i>
+                            <span>{{ tab.name }}</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50 flex justify-around py-2 no-print">
+            <button v-for="tab in tabs" :key="tab.id" 
+                    @click="currentTab = tab.id"
+                    :class="['flex flex-col items-center justify-center flex-1 py-1 transition-all', 
+                             currentTab === tab.id ? 'text-emerald-700 font-bold' : 'text-slate-400']">
+                <i :class="[tab.icon, 'text-base mb-1']"></i>
+                <span class="text-[9px] scale-90">{{ tab.name }}</span>
+            </button>
+        </div>
+
+        <main class="px-4 sm:px-6 lg:px-8 py-6">
+            
+            <section v-if="currentTab === 'weather'" class="space-y-6">
+                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
+                    <div class="absolute right-0 bottom-0 opacity-10 text-9xl -mr-10 -mb-10">
+                        <i class="fa-solid fa-cloud-sun-rain"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center space-x-2 bg-emerald-800/40 w-fit px-3 py-1 rounded-full text-xs font-semibold mb-3">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span>預設產區：台南市南化區 (TID: 6702500)</span>
+                        </div>
+                        <h1 class="text-2xl md:text-3xl font-bold">即時天氣與芒果栽培警示</h1>
+                        <p class="text-emerald-100 mt-1 text-sm md:text-base">結合中央氣象署觀測數據，為您的蜜雪幼苗提供最科學的栽培方針。</p>
+                        <a href="https://www.cwa.gov.tw/V8/C/W/Town/Town.html?TID=6702500" target="_blank" class="inline-flex items-center mt-4 text-xs bg-amber-500 hover:bg-amber-400 text-emerald-950 font-semibold px-4 py-2 rounded-lg transition-colors shadow">
+                            <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> 前往中央氣象署玉井特報
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-sm font-semibold text-slate-500">當前氣候監測</span>
+                                <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium flex items-center">
+                                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></span> 即時模擬數據
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-4 my-6">
+                                <div class="text-amber-500 text-5xl">
+                                    <i :class="weatherData.icon"></i>
+                                </div>
+                                <div>
+                                    <div class="text-4xl font-extrabold text-slate-800">{{ weatherData.temp }}°C</div>
+                                    <div class="text-sm font-semibold text-slate-500">{{ weatherData.desc }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-droplet text-blue-500 w-4"></i>
+                                <span class="text-slate-500">濕度:</span>
+                                <span class="font-bold text-slate-700">{{ weatherData.humidity }}%</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-umbrella text-indigo-500 w-4"></i>
+                                <span class="text-slate-500">降雨機率:</span>
+                                <span class="font-bold text-slate-700">{{ weatherData.rainChance }}%</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-wind text-teal-500 w-4"></i>
+                                <span class="text-slate-500">風速:</span>
+                                <span class="font-bold text-slate-700">{{ weatherData.windSpeed }} m/s</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-sun text-orange-500 w-4"></i>
+                                <span class="text-slate-500">紫外線:</span>
+                                <span class="font-bold text-slate-700">{{ weatherData.uvIndex }} (中)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 lg:col-span-2 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-sm font-semibold text-slate-500">蜜雪幼苗 (8個月) 智慧栽培方針</span>
+                                <button @click="generateAdvisory" :disabled="isGeneratingAdvisory" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-full font-medium transition shadow-sm disabled:opacity-50 flex items-center">
+                                    <i v-if="isGeneratingAdvisory" class="fa-solid fa-spinner animate-spin mr-1.5"></i>
+                                    ✨ <span class="ml-1">取得今日智能栽培建議</span>
+                                </button>
+                            </div>
+                            <div class="space-y-4">
+                                <div v-if="aiAdvisoryText" class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-start space-x-3">
+                                    <div class="text-emerald-500 text-lg mt-0.5 animate-pulse">✨</div>
+                                    <div>
+                                        <h4 class="font-bold text-emerald-800 text-sm">Gemini AI 智能氣候分析</h4>
+                                        <p class="text-xs text-emerald-700 mt-1 leading-relaxed whitespace-pre-line">{{ aiAdvisoryText }}</p>
+                                    </div>
+                                </div>
+                                <div v-else class="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center text-slate-400 text-xs py-8">
+                                    <i class="fa-solid fa-robot mb-2 text-2xl block"></i>
+                                    點擊上方按鈕，根據最新氣候數據生成 AI 栽培建議。
+                                </div>
+                                <div class="p-4 rounded-lg bg-amber-50 border-l-4 border-amber-500 flex items-start space-x-3">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mt-0.5"></i>
+                                    <div>
+                                        <h4 class="font-bold text-amber-800 text-sm">夏季梅雨高溫多濕警戒</h4>
+                                        <p class="text-xs text-amber-700 mt-1 leading-relaxed">目前正值多雨季節。此天氣型態極易引發<strong>芒果炭疽病</strong>及<strong>細菌性黑斑病</strong>。請隨時檢視您的蜜雪幼苗葉片，如有病斑應在雨停黃昏時，依照推荐藥劑及時施作防治。</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
+                                    <div class="bg-slate-50 p-3 rounded-lg flex items-center space-x-2">
+                                        <i class="fa-solid fa-scissors text-emerald-600 text-sm"></i>
+                                        <span><strong>幼期整枝提示：</strong> 勿在此時留花！如有花穗請務必從基部修剪，確保樹骨順利生長。</span>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded-lg flex items-center space-x-2">
+                                        <i class="fa-solid fa-faucet-drip text-blue-600 text-sm"></i>
+                                        <span><strong>水分調節管理：</strong> 幼苗根系尚淺，若遇連續晴天需適度補充水份，維持土壤濕潤不積水。</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-slate-100 pt-4 mt-4">
+                            <span class="text-xs text-slate-400">數據更新時間：{{ weatherData.updateTime }}</span>
+                            <button @click="refreshWeather" class="text-xs text-emerald-700 hover:text-emerald-800 font-semibold flex items-center space-x-1">
+                                <i class="fa-solid fa-arrows-rotate" :class="{'animate-spin': isRefreshingWeather}"></i>
+                                <span>更新天氣資訊</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-graduation-cap text-emerald-600"></i>
+                        <span>農業技術快速參考工具</span>
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <a href="https://pesticide.baphiq.gov.tw/information/Query/Bug" target="_blank" class="p-3 bg-emerald-50/50 hover:bg-emerald-50 rounded-lg border border-emerald-100 text-center transition group">
+                            <i class="fa-solid fa-bug text-emerald-600 group-hover:scale-110 transition-transform mb-2 text-lg block"></i>
+                            <span class="text-xs font-medium text-slate-700 block">病蟲害診斷</span>
+                        </a>
+                        <a href="https://pesticide.baphiq.gov.tw/information/Query/Pesticide" target="_blank" class="p-3 bg-emerald-50/50 hover:bg-emerald-50 rounded-lg border border-emerald-100 text-center transition group">
+                            <i class="fa-solid fa-flask text-emerald-600 group-hover:scale-110 transition-transform mb-2 text-lg block"></i>
+                            <span class="text-xs font-medium text-slate-700 block">推薦農藥查詢</span>
+                        </a>
+                        <a href="https://mportal.kdais.gov.tw" target="_blank" class="p-3 bg-emerald-50/50 hover:bg-emerald-50 rounded-lg border border-emerald-100 text-center transition group">
+                            <i class="fa-solid fa-leaf text-emerald-600 group-hover:scale-110 transition-transform mb-2 text-lg block"></i>
+                            <span class="text-xs font-medium text-slate-700 block">高雄農改場專區</span>
+                        </a>
+                        <a href="https://tgap.moa.gov.tw/" target="_blank" class="p-3 bg-emerald-50/50 hover:bg-emerald-50 rounded-lg border border-emerald-100 text-center transition group">
+                            <i class="fa-solid fa-file-contract text-emerald-600 group-hover:scale-110 transition-transform mb-2 text-lg block"></i>
+                            <span class="text-xs font-medium text-slate-700 block">TGAP生產履歷規範</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="currentTab === 'record-form'" class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="bg-emerald-700 text-white px-6 py-4 flex items-center space-x-3">
+                        <i class="fa-solid fa-pen-to-square text-xl"></i>
+                        <div>
+                            <h2 class="font-bold text-lg">新增果園田間管理作業</h2>
+                            <p class="text-xs text-emerald-100">填寫下方欄位，將資料存入生產履歷資料庫</p>
+                        </div>
+                    </div>
+
+                    <form @submit.prevent="submitRecord" class="p-6 space-y-6">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">作業日期</label>
+                                <input type="date" v-model="form.date" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">天氣概況</label>
+                                <select v-model="form.weather" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                                    <option value="晴天">☀️ 晴天</option>
+                                    <option value="多雲">☁️ 多雲</option>
+                                    <option value="陰天">☁️ 陰天</option>
+                                    <option value="陣雨">🌧️ 陣雨</option>
+                                    <option value="豪大雨">⛈️ 豪大雨</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                    果園作業區塊
+                                    <span class="text-[10px] text-emerald-600 font-normal ml-1">(可在基礎資料新增)</span>
+                                </label>
+                                <select v-model="form.block" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                                    <option value="" disabled>-- 請選擇作業區塊 --</option>
+                                    <option v-for="b in baseData.blocks" :key="b" :value="b">{{ b }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">種植芒果品種 (可複選)</label>
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 max-h-[140px] overflow-y-auto space-y-2">
+                                    <div v-for="variety in varietiesList" :key="variety" class="flex items-center">
+                                        <input type="checkbox" :id="'var-' + variety" :value="variety" v-model="form.varieties" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                        <label :for="'var-' + variety" class="ml-2 text-sm text-slate-700 cursor-pointer select-none">
+                                            {{ variety }}
+                                            <span v-if="variety === '蜜雪'" class="bg-rose-100 text-rose-700 text-[10px] px-1.5 py-0.5 rounded font-bold ml-1">主力幼苗</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-1">已選品種：{{ form.varieties.join('、') || '尚未選擇' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-6">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">果園作業項目</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                                <button type="button" @click="setOperationType('1')" :class="['px-3 py-3 rounded-xl border text-left transition flex flex-col justify-between h-20', form.opType === '1' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 hover:bg-slate-50 text-slate-600']">
+                                    <i class="fa-solid fa-scissors text-base"></i>
+                                    <span class="text-xs font-semibold">1. 修枝、矮化</span>
+                                </button>
+                                <button type="button" @click="setOperationType('3')" :class="['px-3 py-3 rounded-xl border text-left transition flex flex-col justify-between h-20', form.opType === '3' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 hover:bg-slate-50 text-slate-600']">
+                                    <i class="fa-solid fa-spray-can-sparkles text-base"></i>
+                                    <span class="text-xs font-semibold">2. 噴灑農藥/防治</span>
+                                </button>
+                                <button type="button" @click="setOperationType('4')" :class="['px-3 py-3 rounded-xl border text-left transition flex flex-col justify-between h-20', form.opType === '4' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 hover:bg-slate-50 text-slate-600']">
+                                    <i class="fa-solid fa-faucet-drip text-base"></i>
+                                    <span class="text-xs font-semibold">3. 灌溉水份管理</span>
+                                </button>
+                                <button type="button" @click="setOperationType('6')" :class="['px-3 py-3 rounded-xl border text-left transition flex flex-col justify-between h-20', form.opType === '6' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 hover:bg-slate-50 text-slate-600']">
+                                    <i class="fa-solid fa-basket-shopping text-base text-amber-600"></i>
+                                    <span class="text-xs font-semibold">4. 果實採收</span>
+                                </button>
+                                <button type="button" @click="setOperationType('5')" :class="['px-3 py-3 rounded-xl border text-left transition flex flex-col justify-between h-20', form.opType === '5' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 hover:bg-slate-50 text-slate-600']">
+                                    <i class="fa-solid fa-ellipsis text-base"></i>
+                                    <span class="text-xs font-semibold">5. 其他作業</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-150 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                    作業執行人員 (可複選)
+                                    <span class="text-[10px] text-emerald-600 font-normal ml-1">(可在基礎資料新增)</span>
+                                </label>
+                                <div class="bg-white border border-slate-200 rounded-lg p-3 max-h-[140px] overflow-y-auto space-y-2">
+                                    <div v-for="w in baseData.workers" :key="w" class="flex items-center">
+                                        <input type="checkbox" :id="'worker-' + w" :value="w" v-model="form.workers" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                                        <label :for="'worker-' + w" class="ml-2 text-sm text-slate-700 cursor-pointer select-none">{{ w }}</label>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-1">已選人員：{{ form.workers.join('、') || '尚未選擇' }}</p>
+                            </div>
+
+                            <div v-if="form.opType === '3'" class="space-y-4 border-t border-slate-200 pt-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">防治目的</label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <label class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-50 text-xs">
+                                            <input type="radio" value="病蟲害管理" v-model="form.pesticidePurpose" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                                            <span>(1) 病蟲害管理</span>
+                                        </label>
+                                        <label class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-50 text-xs">
+                                            <input type="radio" value="除草" v-model="form.pesticidePurpose" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                                            <span>(2) 除草</span>
+                                        </label>
+                                        <label class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-50 text-xs">
+                                            <input type="radio" value="套袋前防治" v-model="form.pesticidePurpose" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                                            <span>(3) 套袋前防治</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">資材/農藥品名與配方</label>
+                                    <select v-model="form.pesticideName" class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+                                        <option value="" disabled>-- 請選擇推薦資材 --</option>
+                                        <option v-for="p in baseData.pesticides" :key="p" :value="p">{{ p }}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div v-if="form.opType === '6'" class="space-y-4 border-t border-slate-200 pt-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-2">採收總量</label>
+                                        <input type="number" v-model="form.harvestQty" @input="updateHarvestNotes" placeholder="例: 150" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-2">計算單位</label>
+                                        <select v-model="form.harvestUnit" @change="updateHarvestNotes" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none">
+                                            <option value="公斤">公斤 (kg)</option>
+                                            <option value="台斤">台斤</option>
+                                            <option value="箱">箱</option>
+                                            <option value="簍">簍</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-2">果實品質等級</label>
+                                        <select v-model="form.harvestGrade" @change="updateHarvestNotes" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none">
+                                            <option value="特級品">特級品 (外觀無瑕疵)</option>
+                                            <option value="優等品">優等品 (良果)</option>
+                                            <option value="外銷級">外銷級 (嚴選)</option>
+                                            <option value="加工級">加工級/格外品</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="form.opType === '5'" class="border-t border-slate-200 pt-4">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">自訂作業名稱</label>
+                                <input type="text" v-model="form.customOpName" placeholder="例如：覆蓋雜草蓆、套袋作業、施用有機基肥" class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition flex-1">
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-6">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">作業現場照片 (自動高比例壓縮，保護儲存空間)</label>
+                            <div class="flex items-center space-x-4">
+                                <label class="cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold px-4 py-3 rounded-lg border border-emerald-200 flex items-center space-x-2 transition">
+                                    <i class="fa-solid fa-camera text-base"></i>
+                                    <span>拍照或上傳現場照</span>
+                                    <input type="file" accept="image/*" class="hidden" @change="handlePhotoUpload">
+                                </label>
+                                <div v-if="form.photo" class="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-emerald-500 shadow-sm">
+                                    <img :src="form.photo" class="w-full h-full object-cover">
+                                    <button type="button" @click="form.photo = ''" class="absolute top-0 right-0 bg-rose-600 text-white rounded-full p-0.5 text-[8px] w-4 h-4 flex items-center justify-center shadow" title="清除照片">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <span v-else class="text-xs text-slate-400">目前無夾帶照片 (非必填)</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">作業備註與說明</label>
+                                <button type="button" @click="generateNotes" :disabled="isGeneratingNotes" class="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded border border-amber-300 transition flex items-center disabled:opacity-50">
+                                    <i v-if="isGeneratingNotes" class="fa-solid fa-spinner animate-spin mr-1"></i>
+                                    ✨ AI 智能撰寫備註
+                                </button>
+                            </div>
+                            <textarea v-model="form.notes" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition text-sm" placeholder="記錄當日作業詳細狀況，或使用上方 AI 自動生成"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-4 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                            <span>確認送出，將此筆寫入產銷履歷</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive } = Vue;
+
+        createApp({
+            setup() {
+                // 導覽列標籤
+                const tabs = ref([
+                    { id: 'weather', name: '即時氣象與栽培建議', icon: 'fa-solid fa-cloud-sun-rain' },
+                    { id: 'record-form', name: '新增田間作業', icon: 'fa-solid fa-pen-to-square' }
+                ]);
+                const currentTab = ref('weather');
+
+                // 天氣面板模擬資料
+                const weatherData = reactive({
+                    temp: 32,
+                    desc: '多雲午後短暫雷陣雨',
+                    humidity: 78,
+                    rainChance: 40,
+                    windSpeed: 2.1,
+                    uvIndex: 7,
+                    icon: 'fa-solid fa-cloud-sun-rain',
+                    updateTime: new Date().toLocaleTimeString()
+                });
+
+                const isRefreshingWeather = ref(false);
+                const refreshWeather = () => {
+                    isRefreshingWeather.value = true;
+                    setTimeout(() => {
+                        isRefreshingWeather.value = false;
+                        weatherData.updateTime = new Date().toLocaleTimeString();
+                    }, 1000);
+                };
+
+                // AI 建議與備註產生模擬
+                const aiAdvisoryText = ref('');
+                const isGeneratingAdvisory = ref(false);
+                const generateAdvisory = () => {
+                    isGeneratingAdvisory.value = true;
+                    setTimeout(() => {
+                        isGeneratingAdvisory.value = false;
+                        aiAdvisoryText.value = '今日氣溫炎熱，濕度偏高。適合進行病害預防，建議於下午5點後施用亞磷酸或核酸酵素進行葉面噴灑，增強幼苗抗病力。';
+                    }, 1500);
+                };
+
+                const isGeneratingNotes = ref(false);
+                const generateNotes = () => {
+                    isGeneratingNotes.value = true;
+                    setTimeout(() => {
+                        isGeneratingNotes.value = false;
+                        form.notes = '本日進行例行性果園巡視，樹勢生長健康，幼苗新梢抽出順利。已針對基部萌生之多餘側芽進行人工摘除，並維持土壤適當濕度，無積水現象。';
+                    }, 1200);
+                };
+
+                // 表單基礎資料
+                const varietiesList = ref(['蜜雪', '愛文', '金煌', '玉文', '凱特']);
+                const baseData = reactive({
+                    blocks: ['A區-試驗苗圃', 'B區-網室栽培區', 'C區-露天生產區'],
+                    workers: ['王大明', '李小華', '陳阿伯'],
+                    pesticides: ['波爾多液 (防炭疽/黑斑)', '亞磷酸+氫氧化鉀 (抗病誘導)', '春雷黴素 (細菌性斑點病)']
+                });
+
+                // 表單資料模型
+                const form = reactive({
+                    date: new Date().toISOString().substring(0, 10),
+                    weather: '晴天',
+                    block: '',
+                    varieties: ['蜜雪'],
+                    opType: '3',
+                    workers: ['王大明'],
+                    pesticidePurpose: '病蟲害管理',
+                    pesticideName: '',
+                    harvestQty: '',
+                    harvestUnit: '公斤',
+                    harvestGrade: '優等品',
+                    customOpName: '',
+                    photo: '',
+                    notes: ''
+                });
+
+                const setOperationType = (type) => {
+                    form.opType = type;
+                };
+
+                // 圖片壓縮上傳 (轉換為 Base64 內嵌)
+                const handlePhotoUpload = (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            // 可在此處對圖片進行輕量壓縮，此處採用轉縮圖展示
+                            form.photo = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+
+                const updateHarvestNotes = () => {
+                    if (form.harvestQty) {
+                        form.notes = `採收統計：${form.harvestQty} ${form.harvestUnit} - ${form.harvestGrade}。`;
+                    }
+                };
+
+                const submitRecord = () => {
+                    alert('資料已成功寫入（或串接後端儲存）！');
+                    // 重置部分狀態
+                    form.photo = '';
+                    form.notes = '';
+                    currentTab.value = 'weather';
+                };
+
+                return {
+                    tabs,
+                    currentTab,
+                    weatherData,
+                    isRefreshingWeather,
+                    refreshWeather,
+                    aiAdvisoryText,
+                    isGeneratingAdvisory,
+                    isGeneratingNotes,
+                    generateAdvisory,
+                    generateNotes,
+                    varietiesList,
+                    baseData,
+                    form,
+                    setOperationType,
+                    handlePhotoUpload,
+                    updateHarvestNotes,
+                    submitRecord
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
